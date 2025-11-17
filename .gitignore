@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+clearcare-frontend/node_modules/
+clearcare-backend/node_modules/
+
+# Build outputs
+dist/
+clearcare-frontend/dist/
+clearcare-backend/dist/
+
+# Environment and secrets
+.env
+*.env
+clearcare-backend/serviceAccountKey.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
