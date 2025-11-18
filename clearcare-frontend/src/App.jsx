@@ -11,7 +11,7 @@ export default function App() {
 
         <p className="text-gray-600 text-center mb-8 leading-relaxed">
           Your personal medical instruction assistant.  
-          Summaries, dosage guidance, and interaction insights — all in one place.
+          Summaries, dosage guidance, and interaction insights. All in one place.
         </p>
 
         <Link

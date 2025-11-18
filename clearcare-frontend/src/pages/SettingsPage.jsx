@@ -46,6 +46,7 @@ function SettingsPage() {
 
   // Security (dummy 2FA)
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [twoFAMessage, setTwoFAMessage] = useState(""); // NEW: notification message
 
   // -------------------- THEME APPLY --------------------
   function applyTheme(newTheme) {
@@ -78,7 +79,7 @@ function SettingsPage() {
       setDisplayName(firebaseUser.displayName || "");
       setEmail(firebaseUser.email || "");
 
-      // load theme
+      // theme
       const storedTheme = localStorage.getItem("theme");
       applyTheme(storedTheme || "system");
 
@@ -86,7 +87,7 @@ function SettingsPage() {
       const stored2FA = localStorage.getItem(`2fa_${firebaseUser.uid}`);
       setTwoFAEnabled(stored2FA === "enabled");
 
-      // Load backend privacy settings
+      // Load backend settings
       try {
         const token = await firebaseUser.getIdToken();
 
@@ -111,7 +112,7 @@ function SettingsPage() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // -------------------- PROFILE SAVE (name + email) --------------------
+  // -------------------- PROFILE SAVE --------------------
   async function handleSaveProfile(e) {
     e.preventDefault();
     if (!user) return;
@@ -138,7 +139,7 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- PASSWORD CHANGE (current + new + confirm) --------------------
+  // -------------------- PASSWORD CHANGE --------------------
   async function handleChangePassword(e) {
     e.preventDefault();
     if (!user) return;
@@ -158,14 +159,12 @@ function SettingsPage() {
 
     setPasswordSaving(true);
     try {
-      // 1) Re-authenticate with current password
       const credential = EmailAuthProvider.credential(
         user.email,
         currentPassword
       );
       await reauthenticateWithCredential(user, credential);
 
-      // 2) Update to new password
       await updatePassword(user, newPassword.trim());
 
       setPasswordMessage("Password changed successfully.");
@@ -174,16 +173,15 @@ function SettingsPage() {
       setConfirmPassword("");
     } catch (err) {
       console.error(err);
-      // Firebase error messages are kind of ugly, so keep it high-level
       setPasswordError(
-        "Failed to change password. Please make sure your current password is correct and try again."
+        "Failed to change password. Please make sure your current password is correct."
       );
     } finally {
       setPasswordSaving(false);
     }
   }
 
-  // -------------------- UPDATE BACKEND SETTINGS --------------------
+  // -------------------- BACKEND SETTINGS --------------------
   async function updateBackendSettings(newSettings) {
     if (!user) return;
     setSettingsError("");
@@ -251,12 +249,23 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- 2FA TOGGLE (LOCAL ONLY) --------------------
+  // -------------------- 2FA TOGGLE (LOCAL — now with notification) --------------------
   function toggle2FA() {
     if (!user) return;
     const newState = !twoFAEnabled;
+
     setTwoFAEnabled(newState);
-    localStorage.setItem(`2fa_${user.uid}`, newState ? "enabled" : "disabled");
+    localStorage.setItem(
+      `2fa_${user.uid}`,
+      newState ? "enabled" : "disabled"
+    );
+
+    // NEW: show a temporary notification
+    setTwoFAMessage(
+      newState ? "Two-factor authentication enabled." : "Two-factor authentication disabled."
+    );
+
+    setTimeout(() => setTwoFAMessage(""), 3000);
   }
 
   // -------------------- SIGN OUT --------------------
@@ -276,10 +285,16 @@ function SettingsPage() {
 
   return (
     <Layout userName={user.displayName || user.email}>
-      {/* Scrollable content area, similar to Dashboard */}
       <div className="h-[calc(100vh-5rem)] overflow-y-auto pr-2">
         <div className="space-y-8 pb-4">
           <h1 className="text-2xl font-semibold mb-2">Settings</h1>
+
+          {/* 2FA Notification */}
+          {twoFAMessage && (
+            <div className="bg-green-100 text-green-700 text-sm px-3 py-2 rounded-md border border-green-300">
+              {twoFAMessage}
+            </div>
+          )}
 
           {/* Profile */}
           <section className="bg-white rounded-xl shadow p-4 space-y-4">
@@ -499,7 +514,7 @@ function SettingsPage() {
               <h3 className="font-semibold text-sm">How your data is used</h3>
               <ul className="list-disc pl-4 text-xs text-gray-600 space-y-1">
                 <li>Your email and messages are stored securely.</li>
-                <li>Passwords are not stored (Firebase handles them).</li>
+                <li>Passwords are handled safely by Firebase.</li>
                 <li>No data is sold or shared.</li>
               </ul>
             </div>
