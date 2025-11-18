@@ -19,7 +19,7 @@ export default function DashboardPage() {
       id: 1,
       role: "assistant",
       content:
-        "Hi, I’m your MedAssist assistant. Paste or type your medical instructions, and I’ll help rewrite them in clear, patient-friendly language.\n\nFor example, try something like: \"Take 1 tablet of Lisinopril 10mg by mouth once daily...\"",
+        "Hi, I’m your MedAssist assistant. Share the medications you’re taking or the instructions your doctor gave you, and I’ll help break everything down in simple, easy-to-follow terms.\n\nI can explain what each medicine is for, suggest a clear example schedule, highlight common side effects, point out general interaction concerns, and offer basic tips for managing mild symptoms.\n\nJust type something like: \"Ibuprofen 400mg as needed, Lisinopril 10mg daily, Claritin 10mg daily, can these mix and when should I take them?\"",
       createdAt: new Date().toLocaleString(),
     },
   ]);
