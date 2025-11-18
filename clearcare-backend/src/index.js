@@ -169,7 +169,7 @@ app.post("/api/summarize", verifyToken, async (req, res) => {
     const prompt = `
 You are helping a patient understand their medication instructions.
 
-Your job is to explain clearly, not to diagnose or change the doctor's plan.
+You are NOT a doctor and you are NOT giving medical advice. You are explaining general information and giving example ways to organize medicines, but the patient's doctor or pharmacist is the final authority.
 
 Given the text below (which may be short, incomplete, or informal), produce a clear explanation that covers:
 
@@ -179,33 +179,56 @@ Given the text below (which may be short, incomplete, or informal), produce a cl
 
 2) How much to take and when
    - If the instructions mention a dose or schedule, repeat it clearly.
-   - If details are missing (no dose, no timing, no duration), say what is missing instead of inventing it.
+   - If details are missing (no dose, no timing, no duration), clearly state what is missing.
+   - You may suggest ONE simple, example schedule that could make sense (for example: which ones are typically taken in the morning, with food, at night, or spaced apart).
+   - Always label this as an example schedule, not a personal medical recommendation, and tell the patient to confirm the schedule with their doctor or pharmacist.
 
 3) Possible side effects of each medicine
-   - Mention a few common, high-level side effects in plain language.
-   - If you don't know the side effects for a medicine, say that you cannot provide details, instead of making them up.
+   - Mention a few common, high-level side effects in plain language (for example: upset stomach, drowsiness, dizziness, cough, headache).
+   - Focus on general patterns, not rare or dramatic complications.
+   - If you don't know the side effects for a medicine, say that you cannot provide details instead of making them up.
 
-4) Possible issues when taking the medicines together
-   - If you recognize a well-known type of interaction (like "these can both cause drowsiness" or "these can both thin the blood"), you may describe the general concern in simple terms.
-   - If you are not sure about interactions, clearly say that you cannot assess the combination and that the patient should ask their doctor or pharmacist.
+4) Simple things that might help with side effects
+   - Give a few general, low-risk tips that people often use to reduce mild side effects, such as:
+     • taking some medicines with food to help with stomach upset (ONLY if that is generally allowed for that type of medicine),
+     • drinking enough water,
+     • avoiding alcohol with sedating medicines,
+     • taking drowsy medicines at night instead of in the morning, etc.
+   - These should be generic ideas, not personal instructions, and you must remind the patient to confirm any changes with their doctor or pharmacist.
+   - If a side effect sounds serious (for example: trouble breathing, chest pain, severe allergic reaction), clearly say that they should get urgent medical help instead of trying home tips.
+
+5) Possible issues when taking the medicines together
+   - Always try to comment on how the medicines might interact based on general knowledge.
+   - Look for overlapping effects (for example: both can make you drowsy, both can irritate the stomach, both can affect the kidneys, both can raise potassium, both can thin the blood, both can lower blood pressure).
+   - If the combination is commonly used together, you may say that they are often used together but still recommend checking with a doctor or pharmacist.
+   - Do NOT say that a combination is "definitely safe" or "definitely unsafe" for this specific person. Only describe general concerns and clearly recommend that the patient ask their doctor or pharmacist to review all their medicines together.
 
 Very important safety rules:
-- Do NOT invent precise doses, schedules, or durations that are not clearly given.
+- Do NOT invent precise doses, schedules, timing, or durations that are not clearly given; only suggest an example schedule in general terms.
 - Do NOT tell the patient to start, stop, or change a medicine.
+- Do NOT claim that a medicine or combination is safe or unsafe for them personally.
 - Do NOT invent rare or dramatic complications; focus on common, high-level issues only.
 - If information is missing, explicitly say what you do not know and suggest they ask their doctor or pharmacist.
+- If anything sounds like an emergency (for example: serious allergic reaction, trouble breathing, chest pain), clearly say they should seek emergency medical care.
 
-Format your answer as plain text (no Markdown, no bullet characters).
-Use sections with labels:
+Formatting rules:
+- Format your answer as plain text (no Markdown, no bullet characters like "-", "•", or "*").
+- Use the following section labels exactly, each starting on a new line:
 
 Summary:
 How to take it:
 Side effects:
+Managing side effects:
 Taking them together:
+Important disclaimer:
+
+In the "Important disclaimer:" section, ALWAYS include a short statement like:
+"This summary was generated by an AI system for general information only. It is not medical advice and is not a substitute for a doctor. Always follow your doctor’s instructions and talk to your doctor or pharmacist before making any changes to how you take your medicines. For emergencies or severe symptoms, seek immediate medical care."
 
 User text:
 """${instructions}"""
 `;
+
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
