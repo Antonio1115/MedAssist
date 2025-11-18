@@ -227,6 +227,61 @@ Here are the user-provided instructions or description:
   }
 });
 
+app.get('/api/summaries', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+
+    // Optional: pagination via query params
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    const result = await pool.query(
+      `
+      SELECT id, original_text, summary_text, created_at
+      FROM summaries
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+      `,
+      [userId, limit, offset]
+    );
+
+    res.json({
+      summaries: result.rows,
+    });
+  } catch (err) {
+    console.error('Error fetching summaries:', err);
+    res.status(500).json({ error: 'Failed to fetch summaries' });
+  }
+});
+
+app.delete('/api/summaries/:id', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const summaryId = parseInt(req.params.id, 10);
+
+    // Only delete if the row belongs to this user
+    const result = await pool.query(
+      `
+      DELETE FROM summaries
+      WHERE id = $1 AND user_id = $2
+      RETURNING id
+      `,
+      [summaryId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Summary not found' });
+    }
+
+    res.json({ success: true, id: summaryId });
+  } catch (err) {
+    console.error('Error deleting summary:', err);
+    res.status(500).json({ error: 'Failed to delete summary' });
+  }
+});
+
+
 
 // ------------------------------------
 // Start server
