@@ -1,5 +1,3 @@
-// src/index.js - ClearCare backend (ESM version)
-
 import OpenAI from "openai";
 import express from "express";
 import cors from "cors";
@@ -10,25 +8,21 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ------------------------------------
+
 // Setup __dirname in ES modules
-// ------------------------------------
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ------------------------------------
 // Load environment variables
-// ------------------------------------
-dotenv.config();
 
+dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ------------------------------------
 // Firebase Admin initialization
-// ----------- -------------------------
 
 // serviceAccountKey.json must be in the backend src/ or root (adjust path as needed)
 const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
@@ -38,9 +32,9 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// ------------------------------------
-// Postgres connection (we'll really use it later)
-// ------------------------------------
+
+// Postgres connection 
+
 const { Pool } = pkg;
 
 const pool = new Pool({
@@ -53,9 +47,8 @@ const pool = new Pool({
   // port: process.env.DB_PORT,
 });
 
-// ------------------------------------
 // Express app setup
-// ------------------------------------
+
 const app = express();
 
 // Middleware
@@ -67,9 +60,9 @@ app.use(
   })
 );
 
-// ------------------------------------
+
 // Middleware: verify Firebase ID token
-// ------------------------------------
+
 async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ")
@@ -82,7 +75,7 @@ async function verifyToken(req, res, next) {
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded; // attach decoded token (uid, email, etc.)
+    req.user = decoded; // attach the decoded token (uid, email, etc.)
     next();
   } catch (error) {
     console.error("Token verification failed:", error);
@@ -90,9 +83,7 @@ async function verifyToken(req, res, next) {
   }
 }
 
-// ------------------------------------
 // Routes
-// ------------------------------------
 
 // Health check (public)
 app.get("/", (req, res) => {
@@ -135,9 +126,8 @@ app.post("/api/summarize", verifyToken, async (req, res) => {
 
     const userId = req.user.uid;
 
-    // -------------------------------
     // 1. Load user's privacy settings
-    // -------------------------------
+
     const settingsResult = await pool.query(
       `
       SELECT history_enabled
@@ -163,9 +153,8 @@ app.post("/api/summarize", verifyToken, async (req, res) => {
       historyEnabled = insertSettings.rows[0].history_enabled;
     }
 
-    // -------------------------------
+    // Copilot helped write: OpenAI Prompt and call
     // 2. Call OpenAI (same as before)
-    // -------------------------------
     const prompt = `
 You are helping a patient understand their medication instructions.
 
@@ -248,9 +237,7 @@ User text:
       return res.status(500).json({ error: "No summary generated" });
     }
 
-    // -------------------------------
     // 3. Conditionally save to DB
-    // -------------------------------
     let savedRow = null;
 
     if (historyEnabled) {
@@ -269,9 +256,8 @@ User text:
       savedRow = result.rows[0];
     }
 
-    // -------------------------------
     // 4. Return consistent response
-    // -------------------------------
+
     return res.json({
       summary: summaryText,
       saved: !!savedRow,
@@ -292,9 +278,8 @@ app.get("/api/summaries", verifyToken, async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 20;
     const offset = parseInt(req.query.offset, 10) || 0;
 
-    // -------------------------------
     // 1. Load user's settings
-    // -------------------------------
+
     const settingsResult = await pool.query(
       `
       SELECT auto_delete_30_days
@@ -309,9 +294,9 @@ app.get("/api/summaries", verifyToken, async (req, res) => {
       autoDelete30 = settingsResult.rows[0].auto_delete_30_days;
     }
 
-    // -------------------------------
+    // Copilot helped write: query logic
     // 2. Query DB depending on setting
-    // -------------------------------
+
     let query;
     let params;
 
@@ -415,7 +400,7 @@ app.get('/api/user-settings', verifyToken, async (req, res) => {
   }
 });
 
-// Update current user's settings (partial patched)
+// Copilot helped write: Update current user's settings (partial patched)
 app.patch('/api/user-settings', verifyToken, async (req, res) => {
   try {
     const userId = req.user.uid;
@@ -476,11 +461,8 @@ app.delete('/api/summaries', verifyToken, async (req, res) => {
   }
 });
 
-
-
-// ------------------------------------
 // Start server
-// ------------------------------------
+
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {

@@ -1,4 +1,3 @@
-// clearcare-frontend/src/pages/SettingsPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
@@ -17,6 +16,8 @@ function SettingsPage() {
   const navigate = useNavigate();
 
   const [user, setUser] = useState(null);
+
+  // Copilot helped write: All the variables
 
   // Profile
   const [displayName, setDisplayName] = useState("");
@@ -51,7 +52,7 @@ function SettingsPage() {
   const [twoFAEnteringCode, setTwoFAEnteringCode] = useState(false); // controls modal visibility
   const [twoFACodeInput, setTwoFACodeInput] = useState("");
 
-  // -------------------- THEME APPLY --------------------
+  // Apply Theme
   function applyTheme(newTheme) {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
@@ -70,7 +71,7 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- LOAD USER + SETTINGS --------------------
+  // Copilot helped write: Load User + Settings
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (!firebaseUser) {
@@ -115,7 +116,7 @@ function SettingsPage() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // -------------------- PROFILE SAVE --------------------
+  // Profile Save
   async function handleSaveProfile(e) {
     e.preventDefault();
     if (!user) return;
@@ -142,7 +143,7 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- PASSWORD CHANGE --------------------
+  // Copilot helped write: Password Change
   async function handleChangePassword(e) {
     e.preventDefault();
     if (!user) return;
@@ -184,7 +185,7 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- BACKEND SETTINGS --------------------
+  // Copilot helped write: Backend Settings
   async function updateBackendSettings(newSettings) {
     if (!user) return;
     setSettingsError("");
@@ -223,7 +224,7 @@ function SettingsPage() {
     updateBackendSettings({ auto_delete_30_days: e.target.checked });
   }
 
-  // -------------------- CLEAR HISTORY --------------------
+  // Copilot helped write: Clear History
   async function handleClearHistory() {
     if (!user) return;
     if (!window.confirm("Delete ALL conversation history?")) return;
@@ -252,7 +253,7 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- 2FA (dummy code flow with modal) --------------------
+  // Copilot helped write: Two-Factor Authentication (dummy code flow with modal)
   function startEnable2FA() {
     if (!user) return;
     setTwoFAError("");
@@ -295,13 +296,13 @@ function SettingsPage() {
     setTimeout(() => setTwoFAMessage(""), 4000);
   }
 
-  // -------------------- SIGN OUT --------------------
+  // Sign Out
   async function handleSignOut() {
     await signOut(auth);
     navigate("/login");
   }
 
-  // -------------------- RENDER --------------------
+  // Render
   if (!user) {
     return (
       <Layout>
@@ -310,6 +311,7 @@ function SettingsPage() {
     );
   }
 
+  // Copilot helped write: CSS for settings page
   return (
     <Layout userName={user.displayName || user.email}>
       <div className="h-[calc(100vh-5rem)] overflow-y-auto pr-2 relative">

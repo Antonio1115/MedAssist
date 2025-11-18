@@ -1,5 +1,3 @@
-// src/pages/DashboardPage.jsx
-
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -43,6 +41,7 @@ export default function DashboardPage() {
     }
   }, [messages]);
 
+  // GitHub Copilot wrote this: async handler to simulate assistant response and reset sending state
   async function handleSend(e) {
     e.preventDefault();
     const text = input.trim();

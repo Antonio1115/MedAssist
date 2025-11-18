@@ -1,4 +1,3 @@
-// src/components/Layout.jsx
 import { NavLink } from "react-router-dom";
 
 export default function Layout({ children, userName }) {

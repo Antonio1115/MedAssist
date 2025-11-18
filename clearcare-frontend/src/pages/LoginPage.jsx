@@ -89,6 +89,7 @@ export default function LoginPage() {
     navigate("/dashboard");
   }
 
+  // Copilot helped write: CSS for Login/Signup page
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-10">
@@ -138,9 +139,8 @@ export default function LoginPage() {
             </button>
           </>
         ) : (
-          // -------------------------
+
           // INLINE 2FA VERIFICATION UI
-          // -------------------------
           <div className="border rounded p-5 shadow bg-white mt-4">
             <h2 className="text-xl font-semibold mb-2 text-center">
               Two-Factor Verification
