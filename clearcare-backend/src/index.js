@@ -135,7 +135,37 @@ app.post("/api/summarize", verifyToken, async (req, res) => {
 
     const userId = req.user.uid;
 
-    // 1) Call OpenAI to simplify the instructions
+    // -------------------------------
+    // 1. Load user's privacy settings
+    // -------------------------------
+    const settingsResult = await pool.query(
+      `
+      SELECT history_enabled
+      FROM user_settings
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    let historyEnabled = true;
+    if (settingsResult.rowCount > 0) {
+      historyEnabled = settingsResult.rows[0].history_enabled;
+    } else {
+      // Create row if missing
+      const insertSettings = await pool.query(
+        `
+        INSERT INTO user_settings (user_id)
+        VALUES ($1)
+        RETURNING history_enabled
+        `,
+        [userId]
+      );
+      historyEnabled = insertSettings.rows[0].history_enabled;
+    }
+
+    // -------------------------------
+    // 2. Call OpenAI (same as before)
+    // -------------------------------
     const prompt = `
 You are helping a patient understand their medication instructions.
 
@@ -166,28 +196,25 @@ Very important safety rules:
 - If information is missing, explicitly say what you do not know and suggest they ask their doctor or pharmacist.
 
 Format your answer as plain text (no Markdown, no bullet characters).
-Use short sections with labels exactly like this:
+Use sections with labels:
 
 Summary:
-[1–3 sentences about what the medicine(s) are generally for, in plain language.]
-
 How to take it:
-[Repeat any dose/timing/duration information you actually see in the text. If something is missing, say so.]
-
 Side effects:
-[Briefly describe common side effects for each medicine you recognize. If you are not sure, say so.]
-
 Taking them together:
-[Explain any general concerns about using them together if you recognize them. If you are not sure, say you cannot assess interactions and they should ask a doctor or pharmacist.]
 
-Here are the user-provided instructions or description:
+User text:
 """${instructions}"""
 `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // small, fast, good enough for prototype
+      model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a careful assistant that explains medical instructions clearly but does not give new diagnoses or override doctors." },
+        {
+          role: "system",
+          content:
+            "You are a careful assistant that explains medical instructions clearly but does not give new diagnoses or override doctors.",
+        },
         { role: "user", content: prompt },
       ],
       temperature: 0.2,
@@ -198,28 +225,34 @@ Here are the user-provided instructions or description:
       return res.status(500).json({ error: "No summary generated" });
     }
 
-    // 2) Insert into Postgres
-    const insertQuery = `
-      INSERT INTO summaries (user_id, original_text, summary_text)
-      VALUES ($1, $2, $3)
-      RETURNING id, user_id, original_text, summary_text, created_at;
-    `;
+    // -------------------------------
+    // 3. Conditionally save to DB
+    // -------------------------------
+    let savedRow = null;
 
-    const result = await pool.query(insertQuery, [
-      userId,
-      instructions,
-      summaryText,
-    ]);
+    if (historyEnabled) {
+      const insertQuery = `
+        INSERT INTO summaries (user_id, original_text, summary_text)
+        VALUES ($1, $2, $3)
+        RETURNING id, user_id, original_text, summary_text, created_at;
+      `;
 
-    const row = result.rows[0];
+      const result = await pool.query(insertQuery, [
+        userId,
+        instructions,
+        summaryText,
+      ]);
 
-    // 3) Return the saved row to the frontend
-    res.json({
-      id: row.id,
-      user_id: row.user_id,
-      original_text: row.original_text,
-      summary_text: row.summary_text,
-      created_at: row.created_at,
+      savedRow = result.rows[0];
+    }
+
+    // -------------------------------
+    // 4. Return consistent response
+    // -------------------------------
+    return res.json({
+      summary: summaryText,
+      saved: !!savedRow,
+      record: savedRow,
     });
   } catch (error) {
     console.error("Error in /api/summarize:", error);
@@ -227,33 +260,71 @@ Here are the user-provided instructions or description:
   }
 });
 
-app.get('/api/summaries', verifyToken, async (req, res) => {
+
+// Get summaries for the authenticated user
+app.get("/api/summaries", verifyToken, async (req, res) => {
   try {
     const userId = req.user.uid;
 
-    // Optional: pagination via query params
     const limit = parseInt(req.query.limit, 10) || 20;
     const offset = parseInt(req.query.offset, 10) || 0;
 
-    const result = await pool.query(
+    // -------------------------------
+    // 1. Load user's settings
+    // -------------------------------
+    const settingsResult = await pool.query(
       `
-      SELECT id, original_text, summary_text, created_at
-      FROM summaries
+      SELECT auto_delete_30_days
+      FROM user_settings
       WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2 OFFSET $3
       `,
-      [userId, limit, offset]
+      [userId]
     );
 
-    res.json({
+    let autoDelete30 = false;
+    if (settingsResult.rowCount > 0) {
+      autoDelete30 = settingsResult.rows[0].auto_delete_30_days;
+    }
+
+    // -------------------------------
+    // 2. Query DB depending on setting
+    // -------------------------------
+    let query;
+    let params;
+
+    if (autoDelete30) {
+      query = `
+        SELECT id, original_text, summary_text, created_at
+        FROM summaries
+        WHERE user_id = $1
+          AND created_at >= NOW() - INTERVAL '30 days'
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      params = [userId, limit, offset];
+    } else {
+      query = `
+        SELECT id, original_text, summary_text, created_at
+        FROM summaries
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      params = [userId, limit, offset];
+    }
+
+    const result = await pool.query(query, params);
+
+    return res.json({
       summaries: result.rows,
+      auto_delete_30_days: autoDelete30,
     });
   } catch (err) {
-    console.error('Error fetching summaries:', err);
-    res.status(500).json({ error: 'Failed to fetch summaries' });
+    console.error("Error fetching summaries:", err);
+    res.status(500).json({ error: "Failed to fetch summaries" });
   }
 });
+
 
 app.delete('/api/summaries/:id', verifyToken, async (req, res) => {
   try {
@@ -278,6 +349,107 @@ app.delete('/api/summaries/:id', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Error deleting summary:', err);
     res.status(500).json({ error: 'Failed to delete summary' });
+  }
+});
+
+async function getOrCreateUserSettings(userId) {
+  // Try to fetch existing settings
+  const existing = await pool.query(
+    `
+    SELECT user_id, history_enabled, auto_delete_30_days
+    FROM user_settings
+    WHERE user_id = $1
+    `,
+    [userId]
+  );
+
+  if (existing.rowCount > 0) {
+    return existing.rows[0];
+  }
+
+  // If no row, create one with defaults
+  const inserted = await pool.query(
+    `
+    INSERT INTO user_settings (user_id)
+    VALUES ($1)
+    RETURNING user_id, history_enabled, auto_delete_30_days
+    `,
+    [userId]
+  );
+
+  return inserted.rows[0];
+}
+
+// Get current user's settings
+app.get('/api/user-settings', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const settings = await getOrCreateUserSettings(userId);
+    res.json({ settings });
+  } catch (err) {
+    console.error('Error fetching user settings:', err);
+    res.status(500).json({ error: 'Failed to fetch user settings' });
+  }
+});
+
+// Update current user's settings (partial patched)
+app.patch('/api/user-settings', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { history_enabled, auto_delete_30_days } = req.body;
+
+    const fields = [];
+    const values = [userId];
+    let index = 2;
+
+    if (typeof history_enabled === 'boolean') {
+      fields.push(`history_enabled = $${index++}`);
+      values.push(history_enabled);
+    }
+
+    if (typeof auto_delete_30_days === 'boolean') {
+      fields.push(`auto_delete_30_days = $${index++}`);
+      values.push(auto_delete_30_days);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    const query = `
+      UPDATE user_settings
+      SET ${fields.join(', ')}, updated_at = NOW()
+      WHERE user_id = $1
+      RETURNING user_id, history_enabled, auto_delete_30_days
+    `;
+
+    const result = await pool.query(query, values);
+    res.json({ settings: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating user settings:', err);
+    res.status(500).json({ error: 'Failed to update user settings' });
+  }
+});
+
+app.delete('/api/summaries', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+
+    const result = await pool.query(
+      `
+      DELETE FROM summaries
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      deleted_count: result.rowCount,
+    });
+  } catch (err) {
+    console.error('Error deleting user summaries:', err);
+    res.status(500).json({ error: 'Failed to delete summaries' });
   }
 });
 

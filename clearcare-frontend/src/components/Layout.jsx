@@ -1,49 +1,56 @@
 // src/components/Layout.jsx
 import { NavLink } from "react-router-dom";
 
-export default function Layout({ children, userEmail }) {
+export default function Layout({ children, userName }) {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       {/* Top bar */}
-      <header className="w-full bg-white border-b shadow-sm px-6 py-3 flex items-center justify-between">
+      <header className="w-full bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
             M
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-800">MedAssist</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              MedAssist
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Clearer medical instructions, safer patients.
             </p>
           </div>
         </div>
 
-        <div className="text-sm text-gray-700">
-          {userEmail ? (
+        <div className="text-sm text-gray-700 dark:text-gray-200">
+          {userName ? (
             <>
-              <span className="text-gray-500 mr-1">Signed in as</span>
-              <span className="font-medium">{userEmail}</span>
+              <span className="text-gray-500 dark:text-gray-400 mr-1">
+                Signed in as
+              </span>
+              <span className="font-medium">{userName}</span>
             </>
           ) : (
-            <span className="text-gray-500">Not signed in</span>
+            <span className="text-gray-500 dark:text-gray-400">
+              Not signed in
+            </span>
           )}
         </div>
       </header>
 
-      {/* Main area: sidebar + content */}
+      {/* Main area */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-56 bg-white border-r py-4 px-3">
+        <aside className="w-56 bg-white dark:bg-gray-800 border-r dark:border-gray-700 py-4 px-3">
           <nav className="space-y-1 text-sm">
             <SidebarItem label="Medical Assistance" to="/dashboard" />
             <SidebarItem label="Conversation History" to="/history" />
             <SidebarItem label="Settings" to="/settings" />
-            <SidebarItem label="Account & Security" to="/account" />
           </nav>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 text-gray-900 dark:text-gray-100">
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -59,8 +66,8 @@ function SidebarItem({ label, to }) {
       className={({ isActive }) =>
         base +
         (isActive
-          ? "bg-blue-50 text-blue-700 font-medium border border-blue-200"
-          : "text-gray-700 hover:bg-gray-50")
+          ? "bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium border border-blue-200 dark:border-blue-700"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700")
       }
     >
       <span>{label}</span>
