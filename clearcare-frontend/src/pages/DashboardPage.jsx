@@ -60,71 +60,69 @@ export default function DashboardPage() {
     navigate("/login");
   }
 
-  // For now: fake assistant behavior so you can see the chat UX.
-  // Later we'll replace this with a real call to POST /api/summarize.
   async function handleSend(e) {
-  e.preventDefault();
-  const text = input.trim();
-  if (!text || isSending) return;
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || isSending) return;
 
-  setIsSending(true);
+    setIsSending(true);
 
-  // Add user message immediately
-  const userMsg = {
-    id: Date.now(),
-    role: "user",
-    content: text,
-    createdAt: new Date().toLocaleString(),
-  };
-
-  setMessages((prev) => [...prev, userMsg]);
-  setInput("");
-
-  try {
-    // Get Firebase token
-    const token = await auth.currentUser.getIdToken();
-
-    // Call backend
-    const res = await fetch("http://localhost:4000/api/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ instructions: text }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to summarize");
-    }
-
-    // Backend returns: { id, user_id, original_text, summary_text, created_at }
-    const assistantMsg = {
-      id: data.id,
-      role: "assistant",
-      content: data.summary_text,
-      createdAt: new Date(data.created_at).toLocaleString(),
-    };
-
-    setMessages((prev) => [...prev, assistantMsg]);
-  } catch (err) {
-    console.error(err);
-
-    const errorMsg = {
-      id: Date.now() + 1,
-      role: "assistant",
-      content:
-        "Sorry, I couldn’t summarize those instructions right now. Please try again in a moment.",
+    // Add user message immediately
+    const userMsg = {
+      id: Date.now(),
+      role: "user",
+      content: text,
       createdAt: new Date().toLocaleString(),
     };
 
-    setMessages((prev) => [...prev, errorMsg]);
-  } finally {
-    setIsSending(false);
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+
+    try {
+      // Get Firebase token
+      const token = await auth.currentUser.getIdToken();
+
+      // Call backend
+      const res = await fetch("http://localhost:4000/api/summarize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ instructions: text }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to summarize");
+      }
+
+      // Backend returns { summary, saved, record }
+      const assistantMsg = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: data.summary,
+        createdAt: new Date().toLocaleString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (err) {
+      console.error(err);
+
+      const errorMsg = {
+        id: Date.now() + 2,
+        role: "assistant",
+        content:
+          "Sorry, I couldn’t summarize those instructions right now. Please try again in a moment.",
+        createdAt: new Date().toLocaleString(),
+      };
+
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsSending(false);
+    }
   }
-}
 
   // Developer-only: call /api/secure-test
   async function testSecureApi() {
@@ -195,10 +193,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <Layout userEmail={user.email}>
-      <div className="flex flex-col h-[calc(100vh-5rem)]"> 
-        {/* 5rem ~= header height; lets chat fill the rest nicely */}
-
+    <Layout userName={user.displayName || user.email}>
+      <div className="flex flex-col h-[calc(100vh-5rem)]">
         {/* Chat header inside main content */}
         <div className="flex items-center justify-between mb-3">
           <div>
@@ -343,11 +339,7 @@ function ChatMessage({ message }) {
   const isUser = message.role === "user";
 
   return (
-    <div
-      className={
-        "flex " + (isUser ? "justify-end" : "justify-start")
-      }
-    >
+    <div className={"flex " + (isUser ? "justify-end" : "justify-start")}>
       <div
         className={
           "max-w-xl rounded-lg px-3 py-2 text-sm whitespace-pre-wrap " +

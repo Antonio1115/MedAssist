@@ -1,41 +1,46 @@
 // clearcare-frontend/src/pages/HistoryPage.jsx
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-// ⚠️ Make sure this import matches whatever your LoginPage/DashboardPage use
-import { auth } from '../firebase/index.jsx';
-import Layout from '../components/Layout.jsx';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase/index.jsx";
+import Layout from "../components/Layout.jsx";
 
 function HistoryPage() {
+  const [user, setUser] = useState(null);
   const [summaries, setSummaries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        navigate('/login');
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        navigate("/login");
         return;
       }
 
-      try {
-        const token = await user.getIdToken();
+      setUser(firebaseUser);
 
-        const res = await fetch('http://localhost:4000/api/summaries?limit=50', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      try {
+        const token = await firebaseUser.getIdToken();
+
+        const res = await fetch(
+          "http://localhost:4000/api/summaries?limit=50",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!res.ok) {
-          throw new Error('Failed to fetch summaries');
+          throw new Error("Failed to fetch summaries");
         }
 
         const data = await res.json();
         setSummaries(data.summaries || []);
       } catch (err) {
         console.error(err);
-        setError('Could not load your conversation history.');
+        setError("Could not load your conversation history.");
       } finally {
         setLoading(false);
       }
@@ -43,6 +48,14 @@ function HistoryPage() {
 
     return () => unsubscribe();
   }, [navigate]);
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="p-4 text-gray-600">Loading history...</div>
+      </Layout>
+    );
+  }
 
   let content;
 
@@ -53,7 +66,8 @@ function HistoryPage() {
   } else if (summaries.length === 0) {
     content = (
       <div className="p-4 text-gray-600">
-        You don’t have any saved summaries yet. Try using the Medical Assistance page first.
+        You don’t have any saved summaries yet. Try using the Medical
+        Assistance page first.
       </div>
     );
   } else {
@@ -95,7 +109,13 @@ function HistoryPage() {
     );
   }
 
-  return <Layout>{content}</Layout>;
+  return (
+    <Layout userName={user.displayName || user.email}>
+      <div className="h-[calc(100vh-5rem)] overflow-y-auto">
+        {content}
+      </div>
+    </Layout>
+  );
 }
 
 export default HistoryPage;
