@@ -46,7 +46,10 @@ function SettingsPage() {
 
   // Security (dummy 2FA)
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
-  const [twoFAMessage, setTwoFAMessage] = useState(""); // NEW: notification message
+  const [twoFAMessage, setTwoFAMessage] = useState("");
+  const [twoFAError, setTwoFAError] = useState("");
+  const [twoFAEnteringCode, setTwoFAEnteringCode] = useState(false); // controls modal visibility
+  const [twoFACodeInput, setTwoFACodeInput] = useState("");
 
   // -------------------- THEME APPLY --------------------
   function applyTheme(newTheme) {
@@ -249,23 +252,47 @@ function SettingsPage() {
     }
   }
 
-  // -------------------- 2FA TOGGLE (LOCAL — now with notification) --------------------
-  function toggle2FA() {
+  // -------------------- 2FA (dummy code flow with modal) --------------------
+  function startEnable2FA() {
     if (!user) return;
-    const newState = !twoFAEnabled;
+    setTwoFAError("");
+    setTwoFAMessage("");
+    setTwoFAEnteringCode(true); // open modal
+    setTwoFACodeInput("");
+  }
 
-    setTwoFAEnabled(newState);
-    localStorage.setItem(
-      `2fa_${user.uid}`,
-      newState ? "enabled" : "disabled"
-    );
+  function cancel2FASetup() {
+    setTwoFAEnteringCode(false); // close modal
+    setTwoFACodeInput("");
+    setTwoFAError("");
+  }
 
-    // NEW: show a temporary notification
-    setTwoFAMessage(
-      newState ? "Two-factor authentication enabled." : "Two-factor authentication disabled."
-    );
+  function submit2FACode(e) {
+    e.preventDefault();
+    setTwoFAError("");
+    setTwoFAMessage("");
 
-    setTimeout(() => setTwoFAMessage(""), 3000);
+    if (twoFACodeInput.trim() === "123456") {
+      setTwoFAEnabled(true);
+      localStorage.setItem(`2fa_${user.uid}`, "enabled");
+      setTwoFAEnteringCode(false); // close modal
+      setTwoFACodeInput("");
+      setTwoFAMessage("Two-factor authentication enabled for this demo account.");
+      setTimeout(() => setTwoFAMessage(""), 4000);
+    } else {
+      setTwoFAError("Incorrect code. For this demo, use 123456.");
+    }
+  }
+
+  function disable2FA() {
+    if (!user) return;
+    setTwoFAEnabled(false);
+    localStorage.setItem(`2fa_${user.uid}`, "disabled");
+    setTwoFAMessage("Two-factor authentication disabled.");
+    setTwoFAError("");
+    setTwoFAEnteringCode(false);
+    setTwoFACodeInput("");
+    setTimeout(() => setTwoFAMessage(""), 4000);
   }
 
   // -------------------- SIGN OUT --------------------
@@ -285,14 +312,19 @@ function SettingsPage() {
 
   return (
     <Layout userName={user.displayName || user.email}>
-      <div className="h-[calc(100vh-5rem)] overflow-y-auto pr-2">
+      <div className="h-[calc(100vh-5rem)] overflow-y-auto pr-2 relative">
         <div className="space-y-8 pb-4">
           <h1 className="text-2xl font-semibold mb-2">Settings</h1>
 
-          {/* 2FA Notification */}
+          {/* Global messages */}
           {twoFAMessage && (
             <div className="bg-green-100 text-green-700 text-sm px-3 py-2 rounded-md border border-green-300">
               {twoFAMessage}
+            </div>
+          )}
+          {twoFAError && !twoFAEnteringCode && (
+            <div className="bg-red-100 text-red-700 text-sm px-3 py-2 rounded-md border border-red-300">
+              {twoFAError}
             </div>
           )}
 
@@ -349,21 +381,44 @@ function SettingsPage() {
               <p className="text-gray-700">{user.email}</p>
             </div>
 
-            {/* Dummy 2FA toggle */}
-            <button
-              onClick={toggle2FA}
-              className={`${
-                twoFAEnabled
-                  ? "bg-yellow-500 hover:bg-yellow-600"
-                  : "bg-green-500 hover:bg-green-600"
-              } text-white py-2 px-4 rounded transition text-sm`}
-            >
-              {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
-            </button>
+            {/* Dummy 2FA controls */}
+            <div className="mt-2 space-y-2">
+              <h3 className="font-medium text-sm">Two-Factor Authentication (Demo)</h3>
+
+              {!twoFAEnabled && (
+                <>
+                  <p className="text-xs text-gray-600">
+                    Add an extra layer of security with a 6-digit verification
+                    code sent to your email (demo only).
+                  </p>
+                  <button
+                    onClick={startEnable2FA}
+                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded transition text-sm"
+                  >
+                    Enable 2FA
+                  </button>
+                </>
+              )}
+
+              {twoFAEnabled && (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600">
+                    Two-factor authentication is enabled for this demo account.
+                    On a real system, you would be asked for a 6-digit code at sign-in.
+                  </p>
+                  <button
+                    onClick={disable2FA}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded transition text-sm"
+                  >
+                    Disable 2FA
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={handleSignOut}
-              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded transition text-sm ml-2"
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded transition text-sm"
             >
               Sign Out
             </button>
@@ -520,6 +575,54 @@ function SettingsPage() {
             </div>
           </section>
         </div>
+
+        {/* 2FA MODAL */}
+        {twoFAEnteringCode && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 mx-4">
+              <h2 className="text-lg font-semibold mb-2">
+                Enter verification code
+              </h2>
+              <p className="text-xs text-gray-600 mb-3">
+                We sent a 6-digit verification code to your email address.
+                Enter it below to finish setting up two-factor authentication.
+                (Demo code: 123456)
+              </p>
+
+              {twoFAError && (
+                <div className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md mb-2 border border-red-200">
+                  {twoFAError}
+                </div>
+              )}
+
+              <form onSubmit={submit2FACode} className="space-y-3">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={twoFACodeInput}
+                  onChange={(e) => setTwoFACodeInput(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-center tracking-widest text-sm"
+                  placeholder="123456"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={cancel2FASetup}
+                    className="px-3 py-1.5 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Verify code
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
