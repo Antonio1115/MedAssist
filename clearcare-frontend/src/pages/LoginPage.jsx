@@ -25,7 +25,11 @@ export default function LoginPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigate("/dashboard");
+        const twoFAState = localStorage.getItem(`2fa_${user.uid}`);
+        if (twoFAState !== "enabled") {
+          navigate("/dashboard");
+        }
+        // If 2FA enabled, do NOT navigate automatically
       }
     });
     return () => unsub();
@@ -54,7 +58,7 @@ export default function LoginPage() {
       console.log("Logged in:", cred.user);
 
       const twoFAState = localStorage.getItem(`2fa_${cred.user.uid}`);
-      
+
       if (twoFAState === "enabled") {
         // Do NOT navigate yet — show 2FA UI
         setPendingUser(cred.user);

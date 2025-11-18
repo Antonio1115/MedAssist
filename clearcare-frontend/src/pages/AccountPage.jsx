@@ -35,12 +35,6 @@ export default function AccountPage() {
 
     // Persist dummy 2FA setting
     localStorage.setItem(`2fa_${user.uid}`, newState ? "enabled" : "disabled");
-
-    alert(
-      newState
-        ? "Your dummy 2FA has been enabled.\n(For demo use only.)"
-        : "2FA disabled."
-    );
   }
 
   if (!user) {
