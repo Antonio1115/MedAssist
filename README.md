@@ -1,3 +1,6 @@
+> **Note:** This project was originally developed under the name *ClearCare* and later renamed to **MedAssist**. Some internal folder names still reflect the original name.
+
+
 # MedAssist — AI-Powered Medical Instruction Simplifier
 
 A secure, privacy-focused platform for turning medical instructions into clear, patient-friendly explanations.
@@ -17,7 +20,7 @@ The system uses:
 * **OpenAI API** (zero-retention summarization)
 * **TailwindCSS** (UI styling)
 
-MedAssist was developed as part of a Computer Science course focused on responsible AI, system security, and ethical design.
+MedAssist was developed as part of a Computer Science course with an emphasis on responsible AI, system security, and ethical design, and was built as a complete, end-to-end system rather than a standalone demo.
 
 ---
 
@@ -99,6 +102,8 @@ Firebase Authentication <────> Frontend
 ---
 
 ## 🗂️ Project Structure
+
+The project is organized as a monorepo with separate frontend and backend services:
 
 ```
 clearcare/
@@ -298,4 +303,4 @@ Used throughout development to debug and validate system behavior.
 
 ## 📄 License
 
-This project was developed for academic use within a Computer Science course on security, ethics, and responsible AI development.
+This project was developed within an academic setting as part of a Computer Science course on security, ethics, and responsible AI development.
