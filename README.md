@@ -1,7 +1,7 @@
 > **Note:** This project was originally developed under the name *ClearCare* and later renamed to **MedAssist**. Some internal folder names still reflect the original name.
 
 
-# MedAssist — AI-Powered Medical Instruction Simplifier
+# MedAssist - AI-Powered Medical Instruction Simplifier
 
 A secure, privacy-focused platform for turning medical instructions into clear, patient-friendly explanations.
 
@@ -9,7 +9,7 @@ A secure, privacy-focused platform for turning medical instructions into clear, 
 
 ## 📌 Overview
 
-MedAssist is a full-stack web application that helps users understand their medical instructions by generating safe, simplified summaries using AI. The system was designed with a strong focus on privacy, security, and ethical data handling. Users can control how their data is stored, update their account information securely, and view their past summaries in a clean, medical-style interface.
+MedAssist is a full-stack web application that helps users understand their medical instructions by generating safe, simplified summaries using AI. The system was designed with a strong focus on privacy, security, and ethical data handling. Users can control how their data is stored, securely manage their account information, and view past summaries in a clean, medical-style interface.
 
 The system uses:
 
