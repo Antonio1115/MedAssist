@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import "./index.css";
 import App from "./App.jsx";
-import LoginPage from "./pages/loginPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";

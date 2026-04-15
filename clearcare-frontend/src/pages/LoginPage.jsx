@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
 } from "../firebase/index.jsx";
-import Layout from "../components/Layout.jsx";
+import Layout from "../components/layout.jsx";
 
 export default function LoginPage() {
   const navigate = useNavigate();

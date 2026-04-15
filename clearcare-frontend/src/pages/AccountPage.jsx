@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, onAuthStateChanged, signOut } from "../firebase/index.jsx";
-import Layout from "../components/Layout.jsx";
+import Layout from "../components/layout.jsx";
 
 export default function AccountPage() {
   const navigate = useNavigate();

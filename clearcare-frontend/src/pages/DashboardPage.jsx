@@ -5,7 +5,7 @@ import {
   onAuthStateChanged,
   signOut,
 } from "../firebase/index.jsx";
-import Layout from "../components/Layout.jsx";
+import Layout from "../components/layout.jsx";
 
 export default function DashboardPage() {
   const navigate = useNavigate();

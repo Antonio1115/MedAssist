@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase/index.jsx';
-import Layout from '../components/Layout.jsx';
+import Layout from '../components/layout.jsx';
 
 function HistoryPage() {
   const [summaries, setSummaries] = useState([]);
